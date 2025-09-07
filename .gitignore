@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+API_TESTING_GUIDE.md
+DEPLOYMENT_GUIDE.md
+README.md
