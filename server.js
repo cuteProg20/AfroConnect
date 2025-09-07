@@ -1,21 +1,27 @@
-import express, { json, urlencoded } from 'express';
+import express from 'express';
 import cors from 'cors';
-require('dotenv').config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
-import farmersRoutes from './routes/farmersRoutes';
-import buyersRoutes from './routes/buyersRoutes';
-import transactionsRoutes from './routes/transactionsRoutes';
-import ussdRoutes from './routes/ussdRoutes';
+// ES module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
+dotenv.config();
 
-// import express from 'express';
+import farmersRoutes from './routes/farmersRoutes.js';
+import buyersRoutes from './routes/buyersRoutes.js';
+import transactionsRoutes from './routes/transactionsRoutes.js';
+import ussdRoutes from './routes/ussdRoutes.js';
+
 const app = express();
-// const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
-app.use(json());
-app.use(urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/farmers', farmersRoutes);
@@ -52,12 +58,4 @@ app.use('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
-});
-
-app.get('/', (req, res) => {
-  res.send('Hello AfroConnect!');
-});
-
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
 });

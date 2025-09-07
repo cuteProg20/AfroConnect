@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import ussdController from '../controllers/ussdController.js';
+
 const router = express.Router();
-const ussdController = require('../controllers/ussdController');
 
 // POST /ussd - Handle USSD requests from Africa's Talking
 router.post('/', ussdController.handleUSSD);
@@ -11,4 +12,4 @@ router.get('/sessions', ussdController.getUSSDSessions);
 // DELETE /ussd/sessions - Clear all USSD sessions (for debugging)
 router.delete('/sessions', ussdController.clearUSSDSessions);
 
-module.exports = router;
+export default router;

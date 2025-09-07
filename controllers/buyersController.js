@@ -1,4 +1,4 @@
-const smsService = require('../services/smsService');
+import smsService from '../services/smsService.js';
 
 // In-memory storage for demo purposes
 // In production, you'd use a proper database
@@ -351,7 +351,7 @@ const getBuyersByCrop = async (req, res) => {
   }
 };
 
-module.exports = {
+export default {
   getAllBuyers,
   getBuyerById,
   createBuyer,

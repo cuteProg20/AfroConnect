@@ -1,4 +1,4 @@
-const smsService = require('../services/smsService');
+import smsService from '../services/smsService.js';
 
 // In-memory storage for demo purposes
 // In production, you'd use a proper database
@@ -279,7 +279,7 @@ const sendBulkSMS = async (req, res) => {
   }
 };
 
-module.exports = {
+export default {
   getAllFarmers,
   getFarmerById,
   createFarmer,

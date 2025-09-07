@@ -1,4 +1,4 @@
-const smsService = require('../services/smsService');
+import smsService from '../services/smsService.js';
 
 // In-memory session storage for demo purposes
 // In production, you'd use Redis or a proper database
@@ -278,7 +278,7 @@ const clearUSSDSessions = async (req, res) => {
   }
 };
 
-module.exports = {
+export default {
   handleUSSD,
   getUSSDSessions,
   clearUSSDSessions
