@@ -1,9 +1,10 @@
 import AfricasTalking from 'africastalking';
 
+
 // Initialize Africa's Talking
 const credentials = {
-  apiKey: process.env.AFRICASTALKING_API_KEY,
-  username: process.env.AFRICASTALKING_USERNAME
+  apiKey: "atsk_000fdef23a19589d6d3b8678c9b267aa8064adc5b28d8e9b6f8ffc6925ec5137d9212048",
+  username: "sandbox"
 };
 
 if (!credentials.apiKey || !credentials.username) {
