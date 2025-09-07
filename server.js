@@ -9,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config();
+console.log(process.env);
 
 import farmersRoutes from './routes/farmersRoutes.js';
 import buyersRoutes from './routes/buyersRoutes.js';
