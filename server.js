@@ -30,6 +30,10 @@ app.use('/api/buyers', buyersRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/ussd', ussdRoutes);
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
