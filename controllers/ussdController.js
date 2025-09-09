@@ -7,23 +7,23 @@ let ussdSessions = {};
 // USSD menu structure
 const USSD_MENUS = {
   MAIN: {
-    text: "Welcome to AgriConnect\n1. Register as Farmer\n2. Register as Buyer\n3. Check Market Prices\n4. Weather Updates\n5. My Account",
+    text: "Karibu AgriConnect Tanzania\n1. Jisajili kama Mkulima\n2. Jisajili kama Mnunuzi\n3. Bei za Soko\n4. Hali ya Hewa\n5. Akaunti Yangu",
     options: ['1', '2', '3', '4', '5']
   },
   FARMER_REGISTER: {
-    text: "Farmer Registration\n1. Enter Name\n2. Enter Phone\n3. Enter Location\n4. Enter Crop Type\n0. Back to Main Menu",
+    text: "Usajili wa Mkulima\n1. Ingiza Jina\n2. Ingiza Simu\n3. Ingiza Eneo\n4. Ingiza Aina ya Zao\n0. Rudi Kwenye Menu Kuu",
     options: ['1', '2', '3', '4', '0']
   },
   BUYER_REGISTER: {
-    text: "Buyer Registration\n1. Enter Business Name\n2. Enter Phone\n3. Enter Location\n4. Enter Business Type\n0. Back to Main Menu",
+    text: "Usajili wa Mnunuzi\n1. Ingiza Jina la Biashara\n2. Ingiza Simu\n3. Ingiza Eneo\n4. Ingiza Aina ya Biashara\n0. Rudi Kwenye Menu Kuu",
     options: ['1', '2', '3', '4', '0']
   },
   MARKET_PRICES: {
-    text: "Market Prices (KES per KG)\nMaize: 50\nRice: 80\nBeans: 120\nTomatoes: 60\n\n0. Back to Main Menu",
+    text: "Bei za Soko (TSh kwa Kilo)\nMahindi: 1,200\nMchele: 2,500\nMaharage: 3,800\nNyanya: 1,800\nVitunguu: 2,200\n\n0. Rudi Kwenye Menu Kuu",
     options: ['0']
   },
   WEATHER: {
-    text: "Weather Update\nToday: Sunny, 25°C\nTomorrow: Partly cloudy, 23°C\nWeekend: Light rain expected\n\n0. Back to Main Menu",
+    text: "Hali ya Hewa\nLeo: Jua kali, 28°C\nKesho: Mawingu kidogo, 26°C\nWikendi: Mvua kidogo inatarajiwa\n\n0. Rudi Kwenye Menu Kuu",
     options: ['0']
   }
 };
@@ -129,7 +129,7 @@ const handleMainMenu = async (userInput, session) => {
       return USSD_MENUS.WEATHER.text;
       
     case '5':
-      return 'END Account management coming soon. Thank you for using AgriConnect!';
+      return 'END Usimamizi wa akaunti utakuja hivi karibuni. Asante kwa kutumia AgriConnect Tanzania!';
       
     default:
       return USSD_MENUS.MAIN.text;
@@ -147,19 +147,19 @@ const handleFarmerRegistration = async (userInput, session) => {
     case 0:
       if (userInput === '1') {
         session.step = 1;
-        return 'CON Enter your full name:';
+        return 'CON Ingiza jina lako kamili:';
       }
       return USSD_MENUS.FARMER_REGISTER.text;
       
     case 1:
       session.userData.name = userInput;
       session.step = 2;
-      return 'CON Enter your location:';
+      return 'CON Ingiza eneo lako (mfano: Arusha, Mwanza):';
       
     case 2:
       session.userData.location = userInput;
       session.step = 3;
-      return 'CON Enter your main crop type:';
+      return 'CON Ingiza aina ya zao lako kuu (mfano: Mahindi, Mchele):';
       
     case 3:
       session.userData.cropType = userInput;
@@ -179,10 +179,10 @@ const handleFarmerRegistration = async (userInput, session) => {
         // Send welcome SMS
         await smsService.sendWelcomeSMS(session.phoneNumber, session.userData.name);
         
-        return `END Thank you ${session.userData.name}! You have been registered as a farmer. You will receive SMS updates about market prices and weather.`;
+        return `END Asante ${session.userData.name}! Umesajiliwa kama mkulima. Utapokea SMS za bei za soko na hali ya hewa.`;
       } catch (error) {
         console.error('Error registering farmer:', error);
-        return 'END Registration failed. Please try again later.';
+        return 'END Usajili umeshindikana. Tafadhali jaribu tena baadaye.';
       }
       
     default:
@@ -201,19 +201,19 @@ const handleBuyerRegistration = async (userInput, session) => {
     case 0:
       if (userInput === '1') {
         session.step = 1;
-        return 'CON Enter your business name:';
+        return 'CON Ingiza jina la biashara yako:';
       }
       return USSD_MENUS.BUYER_REGISTER.text;
       
     case 1:
       session.userData.businessName = userInput;
       session.step = 2;
-      return 'CON Enter your location:';
+      return 'CON Ingiza eneo lako (mfano: Dar es Salaam, Dodoma):';
       
     case 2:
       session.userData.location = userInput;
       session.step = 3;
-      return 'CON Enter business type (Wholesale/Retail):';
+      return 'CON Ingiza aina ya biashara (Jumla/Rejareja):';
       
     case 3:
       session.userData.businessType = userInput;
@@ -233,10 +233,10 @@ const handleBuyerRegistration = async (userInput, session) => {
         // Send welcome SMS
         await smsService.sendBuyerWelcomeSMS(session.phoneNumber, session.userData.businessName);
         
-        return `END Thank you! ${session.userData.businessName} has been registered as a buyer. You will receive SMS updates about crop availability.`;
+        return `END Asante! ${session.userData.businessName} imesajiliwa kama mnunuzi. Utapokea SMS za mazao yaliyopo.`;
       } catch (error) {
         console.error('Error registering buyer:', error);
-        return 'END Registration failed. Please try again later.';
+        return 'END Usajili umeshindikana. Tafadhali jaribu tena baadaye.';
       }
       
     default:
