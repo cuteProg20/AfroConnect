@@ -110,21 +110,21 @@ function App() {
 
             <div className="text-center p-6 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
               <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="w-8 h-8 text-yellow-600" />
+                <TrendingUp className="w-8 h-8 text-yellow-600" />
               </div>
-              <h4 className="text-xl font-semibold text-gray-900 mb-2">SMS za Taarifa</h4>
+              <h4 className="text-xl font-semibold text-gray-900 mb-2">Oda za Biashara</h4>
               <p className="text-gray-600">
-                Pokea taarifa za hali ya hewa, bei za soko, na ushauri wa kilimo
+                Tengeneza na simamia oda za kununua na kuuza mazao
               </p>
             </div>
 
             <div className="text-center p-6 rounded-lg border border-gray-200 hover:shadow-lg transition-shadow">
               <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Phone className="w-8 h-8 text-purple-600" />
+                <MessageSquare className="w-8 h-8 text-purple-600" />
               </div>
-              <h4 className="text-xl font-semibold text-gray-900 mb-2">USSD ya Haraka</h4>
+              <h4 className="text-xl font-semibold text-gray-900 mb-2">Akaunti na Miamala</h4>
               <p className="text-gray-600">
-                Tumia *150*00# kwa huduma za haraka bila kutumia data
+                Angalia salio, historia ya miamala, na taarifa za kibinafsi
               </p>
             </div>
           </div>
@@ -220,13 +220,18 @@ function App() {
                   </div>
                   
                   <div className="bg-yellow-50 p-4 rounded-lg">
-                    <h5 className="font-semibold text-yellow-800 mb-2">Bei za Soko:</h5>
-                    <p>Ingiza: <code className="bg-white px-1 rounded">3</code> kuona bei za mazao</p>
+                    <h5 className="font-semibold text-yellow-800 mb-2">Oda za Biashara:</h5>
+                    <p>Ingiza: <code className="bg-white px-1 rounded">4</code> kutengeneza na kusimamia oda</p>
                   </div>
                   
                   <div className="bg-purple-50 p-4 rounded-lg">
-                    <h5 className="font-semibold text-purple-800 mb-2">Hali ya Hewa:</h5>
-                    <p>Ingiza: <code className="bg-white px-1 rounded">4</code> kupata taarifa za hali ya hewa</p>
+                    <h5 className="font-semibold text-purple-800 mb-2">Akaunti Yangu:</h5>
+                    <p>Ingiza: <code className="bg-white px-1 rounded">5</code> kuona salio na miamala</p>
+                  </div>
+                  
+                  <div className="bg-indigo-50 p-4 rounded-lg">
+                    <h5 className="font-semibold text-indigo-800 mb-2">Msaada:</h5>
+                    <p>Ingiza: <code className="bg-white px-1 rounded">6</code> kupata msaada na usaidizi</p>
                   </div>
                 </div>
               </div>
