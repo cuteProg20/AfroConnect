@@ -2,11 +2,7 @@
   "name": "vite-react-typescript-starter",
   "private": true,
   "version": "0.0.0",
-<<<<<<< HEAD
   "type": "module",
-=======
-   "type": "module",
->>>>>>> development
   "scripts": {
     "build": "vite build",
     "build:frontend": "vite build",
