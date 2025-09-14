@@ -1,4 +1,5 @@
 import smsService from '../services/smsService.js';
+<<<<<<< HEAD
 
 // In-memory storage for demo purposes
 // In production, you'd use a proper database
@@ -44,35 +45,35 @@ let transactions = [
 ];
 
 let nextTransactionId = 3;
+=======
+import { transactionsDB } from '../services/databaseService.js';
+>>>>>>> development
 
 // Get all transactions
 const getAllTransactions = async (req, res) => {
   try {
     const { status, farmerId, buyerId, cropType } = req.query;
     
-    let filteredTransactions = transactions;
+    const filters = {};
+    if (status) filters.status = status;
+    if (farmerId) filters.farmerId = farmerId;
+    if (buyerId) filters.buyerId = buyerId;
+    if (cropType) filters.cropType = cropType;
     
-    // Apply filters if provided
-    if (status) {
-      filteredTransactions = filteredTransactions.filter(t => t.status === status);
-    }
-    if (farmerId) {
-      filteredTransactions = filteredTransactions.filter(t => t.farmerId === parseInt(farmerId));
-    }
-    if (buyerId) {
-      filteredTransactions = filteredTransactions.filter(t => t.buyerId === parseInt(buyerId));
-    }
-    if (cropType) {
-      filteredTransactions = filteredTransactions.filter(t => 
-        t.cropType.toLowerCase().includes(cropType.toLowerCase())
-      );
+    const result = await transactionsDB.getAll(filters);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
     }
     
     res.json({
       success: true,
-      data: filteredTransactions,
-      count: filteredTransactions.length,
-      filters: { status, farmerId, buyerId, cropType }
+      data: result.data,
+      count: result.count,
+      filters
     });
   } catch (error) {
     res.status(500).json({
@@ -87,9 +88,16 @@ const getAllTransactions = async (req, res) => {
 const getTransactionById = async (req, res) => {
   try {
     const { id } = req.params;
-    const transaction = transactions.find(t => t.id === parseInt(id));
+    const result = await transactionsDB.getById(id);
     
-    if (!transaction) {
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
+    
+    if (!result.data) {
       return res.status(404).json({
         success: false,
         error: 'Transaction not found'
@@ -98,7 +106,7 @@ const getTransactionById = async (req, res) => {
     
     res.json({
       success: true,
-      data: transaction
+      data: result.data
     });
   } catch (error) {
     res.status(500).json({
@@ -133,43 +141,52 @@ const createTransaction = async (req, res) => {
       });
     }
     
-    const totalAmount = quantity * pricePerUnit;
+    const totalAmount = parseFloat(quantity) * parseFloat(pricePerUnit);
     
-    const newTransaction = {
-      id: nextTransactionId++,
-      farmerId: parseInt(farmerId),
-      buyerId: parseInt(buyerId),
-      cropType,
+    const transactionData = {
+      farmer_id: farmerId,
+      buyer_id: buyerId,
+      crop_type: cropType,
       quantity: parseFloat(quantity),
       unit: unit || 'kg',
-      pricePerUnit: parseFloat(pricePerUnit),
-      totalAmount,
-      currency: 'KES',
+      price_per_unit: parseFloat(pricePerUnit),
+      total_amount: totalAmount,
+      currency: 'TSh',
       status: 'pending',
-      paymentStatus: 'pending',
-      paymentMethod: paymentMethod || 'cash',
-      deliveryDate: deliveryDate || null,
-      deliveryLocation: deliveryLocation || '',
-      notes: notes || '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      payment_status: 'pending',
+      payment_method: paymentMethod || 'cash',
+      delivery_date: deliveryDate || null,
+      delivery_location: deliveryLocation || '',
+      notes: notes || ''
     };
     
-    transactions.push(newTransaction);
+    const result = await transactionsDB.create(transactionData);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
     
     // Send notification SMS to both parties
     try {
-      // Note: In a real app, you'd fetch farmer and buyer phone numbers from database
-      const notificationMessage = `New transaction created: ${quantity}${unit} of ${cropType} for KES ${totalAmount}. Transaction ID: ${newTransaction.id}`;
-      // await smsService.sendSMS(farmerPhone, notificationMessage);
-      // await smsService.sendSMS(buyerPhone, notificationMessage);
+      const transaction = result.data;
+      const notificationMessage = `Muamala mpya umetengenezwa: ${quantity}${unit || 'kg'} ya ${cropType} kwa TSh ${totalAmount.toLocaleString()}. Nambari ya muamala: ${transaction.id}`;
+      
+      if (transaction.farmers && transaction.farmers.phone) {
+        await smsService.sendSMS(transaction.farmers.phone, notificationMessage);
+      }
+      if (transaction.buyers && transaction.buyers.phone) {
+        await smsService.sendSMS(transaction.buyers.phone, notificationMessage);
+      }
     } catch (smsError) {
       console.error('Failed to send transaction notification SMS:', smsError);
     }
     
     res.status(201).json({
       success: true,
-      data: newTransaction,
+      data: result.data,
       message: 'Transaction created successfully'
     });
   } catch (error) {
@@ -187,32 +204,40 @@ const updateTransaction = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
     
-    const transactionIndex = transactions.findIndex(t => t.id === parseInt(id));
+    // Recalculate total amount if quantity or price changes
+    if (updateData.quantity || updateData.pricePerUnit) {
+      const currentResult = await transactionsDB.getById(id);
+      if (!currentResult.success || !currentResult.data) {
+        return res.status(404).json({
+          success: false,
+          error: 'Transaction not found'
+        });
+      }
+      
+      const current = currentResult.data;
+      const quantity = updateData.quantity || current.quantity;
+      const pricePerUnit = updateData.price_per_unit || updateData.pricePerUnit || current.price_per_unit;
+      updateData.total_amount = parseFloat(quantity) * parseFloat(pricePerUnit);
+      
+      // Convert camelCase to snake_case for database
+      if (updateData.pricePerUnit) {
+        updateData.price_per_unit = updateData.pricePerUnit;
+        delete updateData.pricePerUnit;
+      }
+    }
     
-    if (transactionIndex === -1) {
-      return res.status(404).json({
+    const result = await transactionsDB.update(id, updateData);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
         success: false,
-        error: 'Transaction not found'
+        error: result.error
       });
     }
     
-    // Recalculate total amount if quantity or price changes
-    const currentTransaction = transactions[transactionIndex];
-    const quantity = updateData.quantity || currentTransaction.quantity;
-    const pricePerUnit = updateData.pricePerUnit || currentTransaction.pricePerUnit;
-    const totalAmount = quantity * pricePerUnit;
-    
-    // Update transaction data
-    transactions[transactionIndex] = {
-      ...currentTransaction,
-      ...updateData,
-      totalAmount,
-      updatedAt: new Date().toISOString()
-    };
-    
     res.json({
       success: true,
-      data: transactions[transactionIndex],
+      data: result.data,
       message: 'Transaction updated successfully'
     });
   } catch (error) {
@@ -229,15 +254,6 @@ const updateTransactionStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, paymentStatus } = req.body;
-    
-    const transactionIndex = transactions.findIndex(t => t.id === parseInt(id));
-    
-    if (transactionIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        error: 'Transaction not found'
-      });
-    }
     
     const validStatuses = ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];
     const validPaymentStatuses = ['pending', 'paid', 'failed', 'refunded'];
@@ -256,29 +272,37 @@ const updateTransactionStatus = async (req, res) => {
       });
     }
     
-    // Update status
-    if (status) {
-      transactions[transactionIndex].status = status;
-    }
-    if (paymentStatus) {
-      transactions[transactionIndex].paymentStatus = paymentStatus;
-    }
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (paymentStatus) updateData.payment_status = paymentStatus;
     
-    transactions[transactionIndex].updatedAt = new Date().toISOString();
+    const result = await transactionsDB.update(id, updateData);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
     
     // Send status update SMS
     try {
-      const transaction = transactions[transactionIndex];
-      const statusMessage = `Transaction ${transaction.id} status updated: ${status || transaction.status}${paymentStatus ? `, Payment: ${paymentStatus}` : ''}`;
-      // await smsService.sendSMS(farmerPhone, statusMessage);
-      // await smsService.sendSMS(buyerPhone, statusMessage);
+      const transaction = result.data;
+      const statusMessage = `Muamala ${transaction.id} umebadilishwa: ${status || transaction.status}${paymentStatus ? `, Malipo: ${paymentStatus}` : ''}`;
+      
+      if (transaction.farmers && transaction.farmers.phone) {
+        await smsService.sendSMS(transaction.farmers.phone, statusMessage);
+      }
+      if (transaction.buyers && transaction.buyers.phone) {
+        await smsService.sendSMS(transaction.buyers.phone, statusMessage);
+      }
     } catch (smsError) {
       console.error('Failed to send status update SMS:', smsError);
     }
     
     res.json({
       success: true,
-      data: transactions[transactionIndex],
+      data: result.data,
       message: 'Transaction status updated successfully'
     });
   } catch (error) {
@@ -294,20 +318,19 @@ const updateTransactionStatus = async (req, res) => {
 const deleteTransaction = async (req, res) => {
   try {
     const { id } = req.params;
-    const transactionIndex = transactions.findIndex(t => t.id === parseInt(id));
     
-    if (transactionIndex === -1) {
-      return res.status(404).json({
+    const result = await transactionsDB.delete(id);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
         success: false,
-        error: 'Transaction not found'
+        error: result.error
       });
     }
     
-    const deletedTransaction = transactions.splice(transactionIndex, 1)[0];
-    
     res.json({
       success: true,
-      data: deletedTransaction,
+      data: result.data,
       message: 'Transaction deleted successfully'
     });
   } catch (error) {
@@ -323,13 +346,21 @@ const deleteTransaction = async (req, res) => {
 const getTransactionsByFarmer = async (req, res) => {
   try {
     const { farmerId } = req.params;
-    const farmerTransactions = transactions.filter(t => t.farmerId === parseInt(farmerId));
+    
+    const result = await transactionsDB.getAll({ farmerId });
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
     
     res.json({
       success: true,
-      data: farmerTransactions,
-      count: farmerTransactions.length,
-      farmerId: parseInt(farmerId)
+      data: result.data,
+      count: result.count,
+      farmerId
     });
   } catch (error) {
     res.status(500).json({
@@ -344,13 +375,21 @@ const getTransactionsByFarmer = async (req, res) => {
 const getTransactionsByBuyer = async (req, res) => {
   try {
     const { buyerId } = req.params;
-    const buyerTransactions = transactions.filter(t => t.buyerId === parseInt(buyerId));
+    
+    const result = await transactionsDB.getAll({ buyerId });
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
     
     res.json({
       success: true,
-      data: buyerTransactions,
-      count: buyerTransactions.length,
-      buyerId: parseInt(buyerId)
+      data: result.data,
+      count: result.count,
+      buyerId
     });
   } catch (error) {
     res.status(500).json({
@@ -364,38 +403,18 @@ const getTransactionsByBuyer = async (req, res) => {
 // Get transaction statistics
 const getTransactionStats = async (req, res) => {
   try {
-    const totalTransactions = transactions.length;
-    const completedTransactions = transactions.filter(t => t.status === 'completed').length;
-    const pendingTransactions = transactions.filter(t => t.status === 'pending').length;
-    const totalValue = transactions.reduce((sum, t) => sum + t.totalAmount, 0);
-    const completedValue = transactions
-      .filter(t => t.status === 'completed')
-      .reduce((sum, t) => sum + t.totalAmount, 0);
+    const result = await transactionsDB.getStats();
     
-    // Group by crop type
-    const cropStats = transactions.reduce((acc, t) => {
-      if (!acc[t.cropType]) {
-        acc[t.cropType] = { count: 0, totalValue: 0, totalQuantity: 0 };
-      }
-      acc[t.cropType].count++;
-      acc[t.cropType].totalValue += t.totalAmount;
-      acc[t.cropType].totalQuantity += t.quantity;
-      return acc;
-    }, {});
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
     
     res.json({
       success: true,
-      data: {
-        overview: {
-          totalTransactions,
-          completedTransactions,
-          pendingTransactions,
-          totalValue,
-          completedValue,
-          averageTransactionValue: totalTransactions > 0 ? totalValue / totalTransactions : 0
-        },
-        cropStats
-      }
+      data: result.data
     });
   } catch (error) {
     res.status(500).json({

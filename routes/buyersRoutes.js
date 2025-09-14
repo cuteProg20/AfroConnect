@@ -1,7 +1,12 @@
 import express from 'express';
+<<<<<<< HEAD
 import buyersController from '../controllers/buyersController.js';
 
 const router = express.Router();
+=======
+ const router = express.Router();
+import buyersController from '../controllers/buyersController.js';
+>>>>>>> development
 
 // GET /api/buyers - Get all buyers
 router.get('/', buyersController.getAllBuyers);
@@ -27,4 +32,8 @@ router.post('/bulk-sms', buyersController.sendBulkSMSToBuyers);
 // GET /api/buyers/crop/:crop - Get buyers interested in specific crop
 router.get('/crop/:crop', buyersController.getBuyersByCrop);
 
+<<<<<<< HEAD
+=======
+// module.exports = router;
+>>>>>>> development
 export default router;

@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 import AfricasTalking from 'africastalking';
 
 
+=======
+// const AfricasTalking = require('africastalking');
+import AfricasTalking from 'africastalking';
+>>>>>>> development
 // Initialize Africa's Talking
 const credentials = {
   apiKey: "atsk_000fdef23a19589d6d3b8678c9b267aa8064adc5b28d8e9b6f8ffc6925ec5137d9212048",

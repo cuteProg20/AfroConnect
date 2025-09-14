@@ -2,7 +2,11 @@
   "name": "vite-react-typescript-starter",
   "private": true,
   "version": "0.0.0",
+<<<<<<< HEAD
   "type": "module",
+=======
+   "type": "module",
+>>>>>>> development
   "scripts": {
     "build": "vite build",
     "build:frontend": "vite build",
@@ -15,6 +19,7 @@
     "clean": "rm -rf dist node_modules/.cache"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
     "africastalking": "^0.7.3",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",

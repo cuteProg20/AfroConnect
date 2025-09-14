@@ -1,4 +1,5 @@
 import smsService from '../services/smsService.js';
+<<<<<<< HEAD
 
 // In-memory storage for demo purposes
 // In production, you'd use a proper database
@@ -28,14 +29,26 @@ let buyers = [
 ];
 
 let nextBuyerId = 3;
+=======
+import { buyersDB } from '../services/databaseService.js';
+>>>>>>> development
 
 // Get all buyers
 const getAllBuyers = async (req, res) => {
   try {
+    const result = await buyersDB.getAll();
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
+    
     res.json({
       success: true,
-      data: buyers,
-      count: buyers.length
+      data: result.data,
+      count: result.count
     });
   } catch (error) {
     res.status(500).json({
@@ -50,9 +63,16 @@ const getAllBuyers = async (req, res) => {
 const getBuyerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const buyer = buyers.find(b => b.id === parseInt(id));
+    const result = await buyersDB.getById(id);
     
-    if (!buyer) {
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
+    
+    if (!result.data) {
       return res.status(404).json({
         success: false,
         error: 'Buyer not found'
@@ -61,7 +81,7 @@ const getBuyerById = async (req, res) => {
     
     res.json({
       success: true,
-      data: buyer
+      data: result.data
     });
   } catch (error) {
     res.status(500).json({
@@ -93,39 +113,24 @@ const createBuyer = async (req, res) => {
       });
     }
     
-    // Check if phone number already exists
-    const existingBuyer = buyers.find(b => b.phone === phone);
-    if (existingBuyer) {
-      return res.status(400).json({
-        success: false,
-        error: 'Buyer with this phone number already exists'
-      });
-    }
-    
-    // Check if email already exists (if provided)
-    if (email) {
-      const existingEmail = buyers.find(b => b.email === email);
-      if (existingEmail) {
-        return res.status(400).json({
-          success: false,
-          error: 'Buyer with this email already exists'
-        });
-      }
-    }
-    
-    const newBuyer = {
-      id: nextBuyerId++,
+    const buyerData = {
       name,
       phone,
-      email: email || '',
+      email: email || null,
       location,
-      businessType: businessType || '',
-      interestedCrops: Array.isArray(interestedCrops) ? interestedCrops : [],
-      paymentTerms: paymentTerms || '',
-      createdAt: new Date().toISOString()
+      business_type: businessType || '',
+      interested_crops: Array.isArray(interestedCrops) ? interestedCrops : [],
+      payment_terms: paymentTerms || ''
     };
     
-    buyers.push(newBuyer);
+    const result = await buyersDB.create(buyerData);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
     
     // Send welcome SMS
     try {
@@ -137,7 +142,7 @@ const createBuyer = async (req, res) => {
     
     res.status(201).json({
       success: true,
-      data: newBuyer,
+      data: result.data,
       message: 'Buyer registered successfully'
     });
   } catch (error) {
@@ -163,53 +168,36 @@ const updateBuyer = async (req, res) => {
       paymentTerms 
     } = req.body;
     
-    const buyerIndex = buyers.findIndex(b => b.id === parseInt(id));
-    
-    if (buyerIndex === -1) {
+    // Check if buyer exists
+    const existingResult = await buyersDB.getById(id);
+    if (!existingResult.success || !existingResult.data) {
       return res.status(404).json({
         success: false,
         error: 'Buyer not found'
       });
     }
     
-    // Check if new phone number conflicts with existing buyer
-    if (phone && phone !== buyers[buyerIndex].phone) {
-      const existingBuyer = buyers.find(b => b.phone === phone && b.id !== parseInt(id));
-      if (existingBuyer) {
-        return res.status(400).json({
-          success: false,
-          error: 'Phone number already exists for another buyer'
-        });
-      }
-    }
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+    if (location) updateData.location = location;
+    if (businessType !== undefined) updateData.business_type = businessType;
+    if (interestedCrops !== undefined) updateData.interested_crops = Array.isArray(interestedCrops) ? interestedCrops : [];
+    if (paymentTerms !== undefined) updateData.payment_terms = paymentTerms;
     
-    // Check if new email conflicts with existing buyer
-    if (email && email !== buyers[buyerIndex].email) {
-      const existingEmail = buyers.find(b => b.email === email && b.id !== parseInt(id));
-      if (existingEmail) {
-        return res.status(400).json({
-          success: false,
-          error: 'Email already exists for another buyer'
-        });
-      }
-    }
+    const result = await buyersDB.update(id, updateData);
     
-    // Update buyer data
-    buyers[buyerIndex] = {
-      ...buyers[buyerIndex],
-      ...(name && { name }),
-      ...(phone && { phone }),
-      ...(email !== undefined && { email }),
-      ...(location && { location }),
-      ...(businessType !== undefined && { businessType }),
-      ...(interestedCrops !== undefined && { interestedCrops: Array.isArray(interestedCrops) ? interestedCrops : [] }),
-      ...(paymentTerms !== undefined && { paymentTerms }),
-      updatedAt: new Date().toISOString()
-    };
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
     
     res.json({
       success: true,
-      data: buyers[buyerIndex],
+      data: result.data,
       message: 'Buyer updated successfully'
     });
   } catch (error) {
@@ -225,20 +213,19 @@ const updateBuyer = async (req, res) => {
 const deleteBuyer = async (req, res) => {
   try {
     const { id } = req.params;
-    const buyerIndex = buyers.findIndex(b => b.id === parseInt(id));
     
-    if (buyerIndex === -1) {
-      return res.status(404).json({
+    const result = await buyersDB.delete(id);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
         success: false,
-        error: 'Buyer not found'
+        error: result.error
       });
     }
     
-    const deletedBuyer = buyers.splice(buyerIndex, 1)[0];
-    
     res.json({
       success: true,
-      data: deletedBuyer,
+      data: result.data,
       message: 'Buyer deleted successfully'
     });
   } catch (error) {
@@ -263,20 +250,20 @@ const sendSMSToBuyer = async (req, res) => {
       });
     }
     
-    const buyer = buyers.find(b => b.id === parseInt(id));
+    const result = await buyersDB.getById(id);
     
-    if (!buyer) {
+    if (!result.success || !result.data) {
       return res.status(404).json({
         success: false,
         error: 'Buyer not found'
       });
     }
     
-    const result = await smsService.sendSMS(buyer.phone, message);
+    const smsResult = await smsService.sendSMS(result.data.phone, message);
     
     res.json({
       success: true,
-      data: result,
+      data: smsResult,
       message: 'SMS sent successfully'
     });
   } catch (error) {
@@ -300,20 +287,21 @@ const sendBulkSMSToBuyers = async (req, res) => {
       });
     }
     
-    const phoneNumbers = buyers.map(buyer => buyer.phone);
+    const result = await buyersDB.getAll();
     
-    if (phoneNumbers.length === 0) {
+    if (!result.success || result.data.length === 0) {
       return res.status(400).json({
         success: false,
         error: 'No buyers found to send SMS'
       });
     }
     
-    const result = await smsService.sendBulkSMS(phoneNumbers, message);
+    const phoneNumbers = result.data.map(buyer => buyer.phone);
+    const smsResult = await smsService.sendBulkSMS(phoneNumbers, message);
     
     res.json({
       success: true,
-      data: result,
+      data: smsResult,
       message: `SMS sent to ${phoneNumbers.length} buyers`
     });
   } catch (error) {
@@ -330,16 +318,19 @@ const getBuyersByCrop = async (req, res) => {
   try {
     const { crop } = req.params;
     
-    const interestedBuyers = buyers.filter(buyer => 
-      buyer.interestedCrops.some(interestedCrop => 
-        interestedCrop.toLowerCase().includes(crop.toLowerCase())
-      )
-    );
+    const result = await buyersDB.getByCrop(crop);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
     
     res.json({
       success: true,
-      data: interestedBuyers,
-      count: interestedBuyers.length,
+      data: result.data,
+      count: result.count,
       crop: crop
     });
   } catch (error) {

@@ -1,4 +1,5 @@
 import smsService from '../services/smsService.js';
+<<<<<<< HEAD
 
 // In-memory storage for demo purposes
 // In production, you'd use a proper database
@@ -24,14 +25,26 @@ let farmers = [
 ];
 
 let nextId = 3;
+=======
+import { farmersDB } from '../services/databaseService.js';
+>>>>>>> development
 
 // Get all farmers
 const getAllFarmers = async (req, res) => {
   try {
+    const result = await farmersDB.getAll();
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
+    
     res.json({
       success: true,
-      data: farmers,
-      count: farmers.length
+      data: result.data,
+      count: result.count
     });
   } catch (error) {
     res.status(500).json({
@@ -46,9 +59,16 @@ const getAllFarmers = async (req, res) => {
 const getFarmerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const farmer = farmers.find(f => f.id === parseInt(id));
+    const result = await farmersDB.getById(id);
     
-    if (!farmer) {
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
+    
+    if (!result.data) {
       return res.status(404).json({
         success: false,
         error: 'Farmer not found'
@@ -57,7 +77,7 @@ const getFarmerById = async (req, res) => {
     
     res.json({
       success: true,
-      data: farmer
+      data: result.data
     });
   } catch (error) {
     res.status(500).json({
@@ -82,25 +102,30 @@ const createFarmer = async (req, res) => {
     }
     
     // Check if phone number already exists
-    const existingFarmer = farmers.find(f => f.phone === phone);
-    if (existingFarmer) {
+    const existingResult = await farmersDB.getByPhone(phone);
+    if (existingResult.success && existingResult.data) {
       return res.status(400).json({
         success: false,
         error: 'Farmer with this phone number already exists'
       });
     }
     
-    const newFarmer = {
-      id: nextId++,
+    const farmerData = {
       name,
       phone,
       location,
-      cropType: cropType || '',
-      farmSize: farmSize || '',
-      createdAt: new Date().toISOString()
+      crop_type: cropType || '',
+      farm_size: farmSize || ''
     };
     
-    farmers.push(newFarmer);
+    const result = await farmersDB.create(farmerData);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
     
     // Send welcome SMS
     try {
@@ -112,7 +137,7 @@ const createFarmer = async (req, res) => {
     
     res.status(201).json({
       success: true,
-      data: newFarmer,
+      data: result.data,
       message: 'Farmer registered successfully'
     });
   } catch (error) {
@@ -130,9 +155,9 @@ const updateFarmer = async (req, res) => {
     const { id } = req.params;
     const { name, phone, location, cropType, farmSize } = req.body;
     
-    const farmerIndex = farmers.findIndex(f => f.id === parseInt(id));
-    
-    if (farmerIndex === -1) {
+    // Check if farmer exists
+    const existingResult = await farmersDB.getById(id);
+    if (!existingResult.success || !existingResult.data) {
       return res.status(404).json({
         success: false,
         error: 'Farmer not found'
@@ -140,9 +165,9 @@ const updateFarmer = async (req, res) => {
     }
     
     // Check if new phone number conflicts with existing farmer
-    if (phone && phone !== farmers[farmerIndex].phone) {
-      const existingFarmer = farmers.find(f => f.phone === phone && f.id !== parseInt(id));
-      if (existingFarmer) {
+    if (phone && phone !== existingResult.data.phone) {
+      const phoneCheckResult = await farmersDB.getByPhone(phone);
+      if (phoneCheckResult.success && phoneCheckResult.data) {
         return res.status(400).json({
           success: false,
           error: 'Phone number already exists for another farmer'
@@ -150,20 +175,25 @@ const updateFarmer = async (req, res) => {
       }
     }
     
-    // Update farmer data
-    farmers[farmerIndex] = {
-      ...farmers[farmerIndex],
-      ...(name && { name }),
-      ...(phone && { phone }),
-      ...(location && { location }),
-      ...(cropType !== undefined && { cropType }),
-      ...(farmSize !== undefined && { farmSize }),
-      updatedAt: new Date().toISOString()
-    };
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+    if (location) updateData.location = location;
+    if (cropType !== undefined) updateData.crop_type = cropType;
+    if (farmSize !== undefined) updateData.farm_size = farmSize;
+    
+    const result = await farmersDB.update(id, updateData);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
+        success: false,
+        error: result.error
+      });
+    }
     
     res.json({
       success: true,
-      data: farmers[farmerIndex],
+      data: result.data,
       message: 'Farmer updated successfully'
     });
   } catch (error) {
@@ -179,20 +209,19 @@ const updateFarmer = async (req, res) => {
 const deleteFarmer = async (req, res) => {
   try {
     const { id } = req.params;
-    const farmerIndex = farmers.findIndex(f => f.id === parseInt(id));
     
-    if (farmerIndex === -1) {
-      return res.status(404).json({
+    const result = await farmersDB.delete(id);
+    
+    if (!result.success) {
+      return res.status(result.code || 500).json({
         success: false,
-        error: 'Farmer not found'
+        error: result.error
       });
     }
     
-    const deletedFarmer = farmers.splice(farmerIndex, 1)[0];
-    
     res.json({
       success: true,
-      data: deletedFarmer,
+      data: result.data,
       message: 'Farmer deleted successfully'
     });
   } catch (error) {
@@ -217,20 +246,20 @@ const sendSMSToFarmer = async (req, res) => {
       });
     }
     
-    const farmer = farmers.find(f => f.id === parseInt(id));
+    const result = await farmersDB.getById(id);
     
-    if (!farmer) {
+    if (!result.success || !result.data) {
       return res.status(404).json({
         success: false,
         error: 'Farmer not found'
       });
     }
     
-    const result = await smsService.sendSMS(farmer.phone, message);
+    const smsResult = await smsService.sendSMS(result.data.phone, message);
     
     res.json({
       success: true,
-      data: result,
+      data: smsResult,
       message: 'SMS sent successfully'
     });
   } catch (error) {
@@ -254,20 +283,21 @@ const sendBulkSMS = async (req, res) => {
       });
     }
     
-    const phoneNumbers = farmers.map(farmer => farmer.phone);
+    const result = await farmersDB.getAll();
     
-    if (phoneNumbers.length === 0) {
+    if (!result.success || result.data.length === 0) {
       return res.status(400).json({
         success: false,
         error: 'No farmers found to send SMS'
       });
     }
     
-    const result = await smsService.sendBulkSMS(phoneNumbers, message);
+    const phoneNumbers = result.data.map(farmer => farmer.phone);
+    const smsResult = await smsService.sendBulkSMS(phoneNumbers, message);
     
     res.json({
       success: true,
-      data: result,
+      data: smsResult,
       message: `SMS sent to ${phoneNumbers.length} farmers`
     });
   } catch (error) {

@@ -455,3 +455,96 @@ For issues and questions:
 ## 📝 License
 
 This project is for educational and development purposes.
+
+/*
+  # AgriConnect Database Schema
+
+  1. New Tables
+    - `farmers`
+      - `id` (uuid, primary key)
+      - `name` (text, required)
+      - `phone` (text, unique, required)
+      - `location` (text, required)
+      - `crop_type` (text)
+      - `farm_size` (text)
+      - `created_at` (timestamp)
+      - `updated_at` (timestamp)
+    
+    - `buyers`
+      - `id` (uuid, primary key)
+      - `name` (text, required)
+      - `phone` (text, unique, required)
+      - `email` (text, unique)
+      - `location` (text, required)
+      - `business_type` (text)
+      - `interested_crops` (text array)
+      - `payment_terms` (text)
+      - `created_at` (timestamp)
+      - `updated_at` (timestamp)
+    
+    - `transactions`
+      - `id` (uuid, primary key)
+      - `farmer_id` (uuid, foreign key)
+      - `buyer_id` (uuid, foreign key)
+      - `crop_type` (text, required)
+      - `quantity` (decimal, required)
+      - `unit` (text, default 'kg')
+      - `price_per_unit` (decimal, required)
+      - `total_amount` (decimal, required)
+      - `currency` (text, default 'TSh')
+      - `status` (text, default 'pending')
+      - `payment_status` (text, default 'pending')
+      - `payment_method` (text)
+      - `delivery_date` (date)
+      - `delivery_location` (text)
+      - `notes` (text)
+      - `created_at` (timestamp)
+      - `updated_at` (timestamp)
+    
+    - `market_prices`
+      - `id` (uuid, primary key)
+      - `crop_type` (text, required)
+      - `price` (decimal, required)
+      - `currency` (text, default 'TSh')
+      - `market_location` (text)
+      - `quality_grade` (text)
+      - `price_change` (decimal)
+      - `updated_at` (timestamp)
+    
+    - `ussd_sessions`
+      - `id` (uuid, primary key)
+      - `session_id` (text, unique, required)
+      - `phone_number` (text, required)
+      - `current_menu` (text, default 'MAIN')
+      - `user_data` (jsonb)
+      - `step` (integer, default 0)
+      - `user_type` (text)
+      - `created_at` (timestamp)
+      - `updated_at` (timestamp)
+
+  2. Security
+    - Enable RLS on all tables
+    - Add policies for authenticated users
+    - Add policies for service role operations
+
+  3. Indexes
+    - Add indexes for frequently queried columns
+    - Add composite indexes for filtering
+*/
+
+
+/*
+  # Seed Sample Data for AgriConnect
+
+  1. Sample Data
+    - Insert sample farmers from Tanzania
+    - Insert sample buyers (businesses)
+    - Insert current market prices
+    - Insert sample transactions
+
+  2. Data Features
+    - Realistic Tanzanian names and locations
+    - Current market prices in TSh
+    - Various crop types common in Tanzania
+    - Different business types and payment terms
+*/

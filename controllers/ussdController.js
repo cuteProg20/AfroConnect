@@ -1,9 +1,13 @@
+<<<<<<< HEAD
 import smsService from '../services/smsService.js';
+=======
+import { ussdSessionsDB } from '../services/databaseService.js';
+>>>>>>> development
 
-// In-memory session storage for demo purposes
-// In production, you'd use Redis or a proper database
-let ussdSessions = {};
+// In-memory session storage (in production, use Redis or database)
+const sessions = new Map();
 
+<<<<<<< HEAD
 // Sample data for demo
 const sampleOrders = [
   { id: 1, farmerId: 1, buyerId: 1, crop: 'Mahindi', quantity: 100, status: 'pending', amount: 120000 },
@@ -43,6 +47,36 @@ const USSD_MENUS = {
   },
   HELP: {
     text: "Msaada na Usaidizi\n1. Jinsi ya Kutumia Mfumo\n2. Bei za Huduma\n3. Wasiliana Nasi\n4. Matatizo ya Kawaida\n0. Rudi Kwenye Menu Kuu",
+=======
+// USSD menu structure
+const menus = {
+  main: {
+    text: "Karibu AgriConnect Tanzania\n1. Jisajili kama Mkulima\n2. Jisajili kama Mnunuzi\n3. Bei za Soko\n4. Oda za Biashara\n5. Akaunti Yangu\n6. Msaada\n0. Ondoka",
+    options: ['1', '2', '3', '4', '5', '6', '0']
+  },
+  register_farmer: {
+    text: "Usajili wa Mkulima\n1. Jina lako\n2. Eneo lako\n3. Aina ya mazao\n0. Rudi nyuma",
+    options: ['1', '2', '3', '0']
+  },
+  register_buyer: {
+    text: "Usajili wa Mnunuzi\n1. Jina la biashara\n2. Eneo la biashara\n3. Aina ya biashara\n0. Rudi nyuma",
+    options: ['1', '2', '3', '0']
+  },
+  market_prices: {
+    text: "Bei za Soko (TSh kwa Kilo)\n1. Mahindi - 1,200\n2. Mchele - 2,500\n3. Maharage - 3,800\n4. Nyanya - 1,800\n5. Vitunguu - 2,200\n6. Karanga - 4,500\n0. Rudi nyuma",
+    options: ['1', '2', '3', '4', '5', '6', '0']
+  },
+  orders: {
+    text: "Oda za Biashara\n1. Tengeneza oda mpya\n2. Angalia oda zangu\n3. Oda zinazopatikana\n4. Historia ya oda\n0. Rudi nyuma",
+    options: ['1', '2', '3', '4', '0']
+  },
+  account: {
+    text: "Akaunti Yangu\n1. Salio la akaunti\n2. Historia ya miamala\n3. Taarifa za kibinafsi\n4. Badilisha nambari\n0. Rudi nyuma",
+    options: ['1', '2', '3', '4', '0']
+  },
+  help: {
+    text: "Msaada na Usaidizi\n1. Maelekezo ya matumizi\n2. Bei za huduma\n3. Mawasiliano\n4. Maswali yanayoulizwa sana\n0. Rudi nyuma",
+>>>>>>> development
     options: ['1', '2', '3', '4', '0']
   }
 };
@@ -52,6 +86,7 @@ const handleUSSD = async (req, res) => {
   try {
     const { sessionId, serviceCode, phoneNumber, text } = req.body;
     
+<<<<<<< HEAD
     console.log('USSD Request:', { sessionId, serviceCode, phoneNumber, text });
     
     // Initialize session if it doesn't exist
@@ -67,23 +102,35 @@ const handleUSSD = async (req, res) => {
     
     const session = ussdSessions[sessionId];
     const userInput = text.split('*').pop() || ''; // Get the last input
+=======
+    // Get or create session
+    let session = sessions.get(sessionId) || {
+      phoneNumber,
+      currentMenu: 'main',
+      userData: {},
+      step: 0
+    };
+>>>>>>> development
     
     let response = '';
     let continueSession = true;
     
-    // Handle different menu states
+    // Parse user input
+    const inputs = text ? text.split('*') : [];
+    const lastInput = inputs[inputs.length - 1] || '';
+    
+    // Handle menu navigation
     switch (session.currentMenu) {
-      case 'MAIN':
-        response = await handleMainMenu(userInput, session);
+      case 'main':
+        response = handleMainMenu(lastInput, session);
         break;
-        
-      case 'FARMER_REGISTER':
-        response = await handleFarmerRegistration(userInput, session);
+      case 'register_farmer':
+        response = handleFarmerRegistration(lastInput, session);
         break;
-        
-      case 'BUYER_REGISTER':
-        response = await handleBuyerRegistration(userInput, session);
+      case 'register_buyer':
+        response = handleBuyerRegistration(lastInput, session);
         break;
+<<<<<<< HEAD
         
       case 'MARKET_PRICES':
         response = await handleMarketPrices(userInput, session);
@@ -103,50 +150,67 @@ const handleUSSD = async (req, res) => {
         
       case 'CREATE_ORDER':
         response = await handleCreateOrder(userInput, session);
+=======
+      case 'market_prices':
+        response = handleMarketPrices(lastInput, session);
         break;
-        
+      case 'orders':
+        response = handleOrders(lastInput, session);
+        break;
+      case 'account':
+        response = handleAccount(lastInput, session);
+        break;
+      case 'help':
+        response = handleHelp(lastInput, session);
+>>>>>>> development
+        break;
       default:
-        response = USSD_MENUS.MAIN.text;
-        session.currentMenu = 'MAIN';
+        response = menus.main.text;
+        session.currentMenu = 'main';
     }
     
     // Check if session should end
-    if (response.startsWith('END')) {
-      delete ussdSessions[sessionId];
+    if (lastInput === '0' && session.currentMenu === 'main') {
+      response = 'END Asante kwa kutumia AgriConnect Tanzania!';
       continueSession = false;
+      sessions.delete(sessionId);
+    } else if (response.startsWith('END')) {
+      continueSession = false;
+      sessions.delete(sessionId);
+    } else {
+      // Update session
+      sessions.set(sessionId, session);
+      response = 'CON ' + response;
     }
     
-    // Format response for Africa's Talking
-    const responseText = continueSession ? `CON ${response}` : response;
-    
     res.set('Content-Type', 'text/plain');
-    res.send(responseText);
+    res.send(response);
     
   } catch (error) {
     console.error('USSD Error:', error);
     res.set('Content-Type', 'text/plain');
+<<<<<<< HEAD
     res.send('END Samahani, kumekuwa na hitilafu. Tafadhali jaribu tena.');
+=======
+    res.send('END Kuna hitilafu. Jaribu tena baadaye.');
+>>>>>>> development
   }
 };
 
-// Handle main menu navigation
-const handleMainMenu = async (userInput, session) => {
-  switch (userInput) {
+// Handle main menu
+function handleMainMenu(input, session) {
+  switch (input) {
     case '1':
-      session.currentMenu = 'FARMER_REGISTER';
-      session.step = 0;
-      return USSD_MENUS.FARMER_REGISTER.text;
-      
+      session.currentMenu = 'register_farmer';
+      return menus.register_farmer.text;
     case '2':
-      session.currentMenu = 'BUYER_REGISTER';
-      session.step = 0;
-      return USSD_MENUS.BUYER_REGISTER.text;
-      
+      session.currentMenu = 'register_buyer';
+      return menus.register_buyer.text;
     case '3':
-      session.currentMenu = 'MARKET_PRICES';
-      return USSD_MENUS.MARKET_PRICES.text;
-      
+      session.currentMenu = 'market_prices';
+      return menus.market_prices.text;
     case '4':
+<<<<<<< HEAD
       session.currentMenu = 'ORDERS';
       return USSD_MENUS.ORDERS.text;
       
@@ -158,18 +222,69 @@ const handleMainMenu = async (userInput, session) => {
       session.currentMenu = 'HELP';
       return USSD_MENUS.HELP.text;
       
+=======
+      session.currentMenu = 'orders';
+      return menus.orders.text;
+    case '5':
+      session.currentMenu = 'account';
+      return menus.account.text;
+    case '6':
+      session.currentMenu = 'help';
+      return menus.help.text;
+    case '0':
+      return 'END Asante kwa kutumia AgriConnect Tanzania!';
+>>>>>>> development
     default:
-      return USSD_MENUS.MAIN.text;
+      return menus.main.text;
   }
-};
+}
 
-// Handle farmer registration flow
-const handleFarmerRegistration = async (userInput, session) => {
-  if (userInput === '0') {
-    session.currentMenu = 'MAIN';
-    return USSD_MENUS.MAIN.text;
+// Handle farmer registration
+function handleFarmerRegistration(input, session) {
+  switch (input) {
+    case '1':
+      return 'CON Ingiza jina lako:';
+    case '2':
+      return 'CON Ingiza eneo lako (mji/wilaya):';
+    case '3':
+      return 'CON Chagua aina ya mazao:\n1. Mahindi\n2. Mchele\n3. Maharage\n4. Nyanya\n5. Mengineyo';
+    case '0':
+      session.currentMenu = 'main';
+      return menus.main.text;
+    default:
+      return menus.register_farmer.text;
   }
+}
+
+// Handle buyer registration
+function handleBuyerRegistration(input, session) {
+  switch (input) {
+    case '1':
+      return 'CON Ingiza jina la biashara yako:';
+    case '2':
+      return 'CON Ingiza eneo la biashara (mji/wilaya):';
+    case '3':
+      return 'CON Chagua aina ya biashara:\n1. Jumla\n2. Rejareja\n3. Kiwanda\n4. Mengineyo';
+    case '0':
+      session.currentMenu = 'main';
+      return menus.main.text;
+    default:
+      return menus.register_buyer.text;
+  }
+}
+
+// Handle market prices
+function handleMarketPrices(input, session) {
+  const prices = {
+    '1': 'Mahindi: TSh 1,200/kg (+5% kutoka wiki iliyopita)\nSoko: Kariakoo, Dar es Salaam',
+    '2': 'Mchele: TSh 2,500/kg (bei imara)\nSoko: Tandale, Dar es Salaam',
+    '3': 'Maharage: TSh 3,800/kg (+8% kutoka wiki iliyopita)\nSoko: Mwenge, Dar es Salaam',
+    '4': 'Nyanya: TSh 1,800/kg (-2% kutoka wiki iliyopita)\nSoko: Buguruni, Dar es Salaam',
+    '5': 'Vitunguu: TSh 2,200/kg (+3% kutoka wiki iliyopita)\nSoko: Ilala, Dar es Salaam',
+    '6': 'Karanga: TSh 4,500/kg (+12% kutoka wiki iliyopita)\nSoko: Temeke, Dar es Salaam'
+  };
   
+<<<<<<< HEAD
   switch (session.step) {
     case 0:
       if (userInput === '1') {
@@ -202,9 +317,19 @@ const handleFarmerRegistration = async (userInput, session) => {
       
     default:
       return USSD_MENUS.FARMER_REGISTER.text;
+=======
+  if (prices[input]) {
+    return 'END ' + prices[input] + '\n\nAsante kwa kutumia AgriConnect!';
+  } else if (input === '0') {
+    session.currentMenu = 'main';
+    return menus.main.text;
+  } else {
+    return menus.market_prices.text;
+>>>>>>> development
   }
-};
+}
 
+<<<<<<< HEAD
 // Handle buyer registration flow
 const handleBuyerRegistration = async (userInput, session) => {
   if (userInput === '0') {
@@ -242,11 +367,28 @@ const handleBuyerRegistration = async (userInput, session) => {
         return 'END Usajili umeshindikana. Tafadhali jaribu tena baadaye.';
       }
       
+=======
+// Handle orders
+function handleOrders(input, session) {
+  switch (input) {
+    case '1':
+      return 'END Utaratibu wa kutengeneza oda unaendelezwa.\nTumia *150*00*4*1# kwa maelezo zaidi.';
+    case '2':
+      return 'END Oda zako:\n1. Mahindi 50kg - Inasubiri\n2. Mchele 30kg - Imekamilika\n\nAsante!';
+    case '3':
+      return 'END Oda zinazopatikana:\n1. Nyanya 100kg - TSh 180,000\n2. Maharage 25kg - TSh 95,000\n\nPiga *150*00*4*3# kuona zaidi.';
+    case '4':
+      return 'END Historia ya oda zako:\nJumla ya miamala: 15\nKiasi cha jumla: TSh 2,450,000\n\nAsante!';
+    case '0':
+      session.currentMenu = 'main';
+      return menus.main.text;
+>>>>>>> development
     default:
-      return USSD_MENUS.BUYER_REGISTER.text;
+      return menus.orders.text;
   }
-};
+}
 
+<<<<<<< HEAD
 // Handle market prices
 const handleMarketPrices = async (userInput, session) => {
   if (userInput === '0') {
@@ -419,35 +561,82 @@ const handleHelp = async (userInput, session) => {
 };
 
 // Get USSD session info (for debugging)
+=======
+// Handle account
+function handleAccount(input, session) {
+  switch (input) {
+    case '1':
+      return 'END Salio la Akaunti:\nSalio la sasa: TSh 275,000\nAkiba: TSh 150,000\nMikopo: TSh 0\n\nAsante!';
+    case '2':
+      return 'END Historia ya Miamala:\n1. Uuzaji wa mahindi - +TSh 120,000\n2. Ununuzi wa mbegu - -TSh 45,000\n3. Ada ya huduma - -TSh 5,000\n\nAsante!';
+    case '3':
+      return 'END Taarifa za Kibinafsi:\nJina: Mkulima Mzuri\nSimu: ' + session.phoneNumber + '\nEneo: Arusha\nMazao: Mahindi, Maharage\n\nAsante!';
+    case '4':
+      return 'CON Ingiza nambari mpya ya simu:';
+    case '0':
+      session.currentMenu = 'main';
+      return menus.main.text;
+    default:
+      return menus.account.text;
+  }
+}
+
+// Handle help
+function handleHelp(input, session) {
+  switch (input) {
+    case '1':
+      return 'END Maelekezo ya Matumizi:\n1. Piga *150*00#\n2. Chagua chaguo kutoka menyu\n3. Fuata maelekezo\n4. Maliza kwa kubonyeza 0\n\nAsante!';
+    case '2':
+      return 'END Bei za Huduma:\nUsajili: Bure\nUzalishaji wa oda: TSh 500\nMiamala: 2% ya kiasi\nSMS: TSh 50 kwa ujumbe\n\nAsante!';
+    case '3':
+      return 'END Mawasiliano:\nSimu: +255 123 456 789\nSMS: 15000\nBarua pepe: msaada@agriconnect.co.tz\nOfisi: Dar es Salaam, Tanzania\n\nAsante!';
+    case '4':
+      return 'END Maswali Yanayoulizwa Sana:\n1. Je, huduma ni bure? - Usajili ni bure\n2. Ninawezaje kuuza mazao? - Tumia menyu ya oda\n3. Bei zinabadilika lini? - Kila siku\n\nAsante!';
+    case '0':
+      session.currentMenu = 'main';
+      return menus.main.text;
+    default:
+      return menus.help.text;
+  }
+}
+
+// Get all USSD sessions
+>>>>>>> development
 const getUSSDSessions = async (req, res) => {
   try {
+    const sessionData = Array.from(sessions.entries()).map(([id, data]) => ({
+      sessionId: id,
+      ...data
+    }));
+    
     res.json({
       success: true,
-      data: ussdSessions,
-      count: Object.keys(ussdSessions).length
+      sessions: sessionData,
+      count: sessionData.length
     });
   } catch (error) {
+    console.error('Error getting USSD sessions:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch USSD sessions',
-      message: error.message
+      message: 'Error retrieving USSD sessions'
     });
   }
 };
 
-// Clear USSD sessions (for debugging)
+// Clear all USSD sessions
 const clearUSSDSessions = async (req, res) => {
   try {
-    ussdSessions = {};
+    sessions.clear();
+    
     res.json({
       success: true,
       message: 'All USSD sessions cleared'
     });
   } catch (error) {
+    console.error('Error clearing USSD sessions:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to clear USSD sessions',
-      message: error.message
+      message: 'Error clearing USSD sessions'
     });
   }
 };
