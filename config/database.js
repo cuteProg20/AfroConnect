@@ -23,9 +23,9 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || sup
 // Database connection test
 export const testConnection = async () => {
   try {
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('farmers')
-      .select('count(*)')
+      .select('*', { count: 'exact', head: true })
       .limit(1);
     
     if (error) {
