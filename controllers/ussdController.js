@@ -1,30 +1,37 @@
-const smsService = require('../services/smsService');
+import { ussdSessionsDB } from '../services/databaseService.js';
 
-// In-memory session storage for demo purposes
-// In production, you'd use Redis or a proper database
-let ussdSessions = {};
+// In-memory session storage (in production, use Redis or database)
+const sessions = new Map();
 
 // USSD menu structure
-const USSD_MENUS = {
-  MAIN: {
-    text: "Welcome to AgriConnect\n1. Register as Farmer\n2. Register as Buyer\n3. Check Market Prices\n4. Weather Updates\n5. My Account",
-    options: ['1', '2', '3', '4', '5']
+const menus = {
+  main: {
+    text: "Karibu AgriConnect Tanzania\n1. Jisajili kama Mkulima\n2. Jisajili kama Mnunuzi\n3. Bei za Soko\n4. Oda za Biashara\n5. Akaunti Yangu\n6. Msaada\n0. Ondoka",
+    options: ['1', '2', '3', '4', '5', '6', '0']
   },
-  FARMER_REGISTER: {
-    text: "Farmer Registration\n1. Enter Name\n2. Enter Phone\n3. Enter Location\n4. Enter Crop Type\n0. Back to Main Menu",
+  register_farmer: {
+    text: "Usajili wa Mkulima\n1. Jina lako\n2. Eneo lako\n3. Aina ya mazao\n0. Rudi nyuma",
+    options: ['1', '2', '3', '0']
+  },
+  register_buyer: {
+    text: "Usajili wa Mnunuzi\n1. Jina la biashara\n2. Eneo la biashara\n3. Aina ya biashara\n0. Rudi nyuma",
+    options: ['1', '2', '3', '0']
+  },
+  market_prices: {
+    text: "Bei za Soko (TSh kwa Kilo)\n1. Mahindi - 1,200\n2. Mchele - 2,500\n3. Maharage - 3,800\n4. Nyanya - 1,800\n5. Vitunguu - 2,200\n6. Karanga - 4,500\n0. Rudi nyuma",
+    options: ['1', '2', '3', '4', '5', '6', '0']
+  },
+  orders: {
+    text: "Oda za Biashara\n1. Tengeneza oda mpya\n2. Angalia oda zangu\n3. Oda zinazopatikana\n4. Historia ya oda\n0. Rudi nyuma",
     options: ['1', '2', '3', '4', '0']
   },
-  BUYER_REGISTER: {
-    text: "Buyer Registration\n1. Enter Business Name\n2. Enter Phone\n3. Enter Location\n4. Enter Business Type\n0. Back to Main Menu",
+  account: {
+    text: "Akaunti Yangu\n1. Salio la akaunti\n2. Historia ya miamala\n3. Taarifa za kibinafsi\n4. Badilisha nambari\n0. Rudi nyuma",
     options: ['1', '2', '3', '4', '0']
   },
-  MARKET_PRICES: {
-    text: "Market Prices (KES per KG)\nMaize: 50\nRice: 80\nBeans: 120\nTomatoes: 60\n\n0. Back to Main Menu",
-    options: ['0']
-  },
-  WEATHER: {
-    text: "Weather Update\nToday: Sunny, 25°C\nTomorrow: Partly cloudy, 23°C\nWeekend: Light rain expected\n\n0. Back to Main Menu",
-    options: ['0']
+  help: {
+    text: "Msaada na Usaidizi\n1. Maelekezo ya matumizi\n2. Bei za huduma\n3. Mawasiliano\n4. Maswali yanayoulizwa sana\n0. Rudi nyuma",
+    options: ['1', '2', '3', '4', '0']
   }
 };
 
@@ -33,252 +40,254 @@ const handleUSSD = async (req, res) => {
   try {
     const { sessionId, serviceCode, phoneNumber, text } = req.body;
     
-    console.log('USSD Request:', { sessionId, serviceCode, phoneNumber, text });
-    
-    // Initialize session if it doesn't exist
-    if (!ussdSessions[sessionId]) {
-      ussdSessions[sessionId] = {
-        phoneNumber,
-        currentMenu: 'MAIN',
-        userData: {},
-        step: 0
-      };
-    }
-    
-    const session = ussdSessions[sessionId];
-    const userInput = text.split('*').pop(); // Get the last input
+    // Get or create session
+    let session = sessions.get(sessionId) || {
+      phoneNumber,
+      currentMenu: 'main',
+      userData: {},
+      step: 0
+    };
     
     let response = '';
     let continueSession = true;
     
-    // Handle different menu states
+    // Parse user input
+    const inputs = text ? text.split('*') : [];
+    const lastInput = inputs[inputs.length - 1] || '';
+    
+    // Handle menu navigation
     switch (session.currentMenu) {
-      case 'MAIN':
-        response = await handleMainMenu(userInput, session);
+      case 'main':
+        response = handleMainMenu(lastInput, session);
         break;
-        
-      case 'FARMER_REGISTER':
-        response = await handleFarmerRegistration(userInput, session);
+      case 'register_farmer':
+        response = handleFarmerRegistration(lastInput, session);
         break;
-        
-      case 'BUYER_REGISTER':
-        response = await handleBuyerRegistration(userInput, session);
+      case 'register_buyer':
+        response = handleBuyerRegistration(lastInput, session);
         break;
-        
-      case 'MARKET_PRICES':
-        if (userInput === '0') {
-          session.currentMenu = 'MAIN';
-          response = USSD_MENUS.MAIN.text;
-        } else {
-          response = USSD_MENUS.MARKET_PRICES.text;
-        }
+      case 'market_prices':
+        response = handleMarketPrices(lastInput, session);
         break;
-        
-      case 'WEATHER':
-        if (userInput === '0') {
-          session.currentMenu = 'MAIN';
-          response = USSD_MENUS.MAIN.text;
-        } else {
-          response = USSD_MENUS.WEATHER.text;
-        }
+      case 'orders':
+        response = handleOrders(lastInput, session);
         break;
-        
+      case 'account':
+        response = handleAccount(lastInput, session);
+        break;
+      case 'help':
+        response = handleHelp(lastInput, session);
+        break;
       default:
-        response = USSD_MENUS.MAIN.text;
-        session.currentMenu = 'MAIN';
+        response = menus.main.text;
+        session.currentMenu = 'main';
     }
     
     // Check if session should end
-    if (response.startsWith('END')) {
-      delete ussdSessions[sessionId];
+    if (lastInput === '0' && session.currentMenu === 'main') {
+      response = 'END Asante kwa kutumia AgriConnect Tanzania!';
       continueSession = false;
+      sessions.delete(sessionId);
+    } else if (response.startsWith('END')) {
+      continueSession = false;
+      sessions.delete(sessionId);
+    } else {
+      // Update session
+      sessions.set(sessionId, session);
+      response = 'CON ' + response;
     }
     
-    // Format response for Africa's Talking
-    const responseText = continueSession ? `CON ${response}` : response;
-    
     res.set('Content-Type', 'text/plain');
-    res.send(responseText);
+    res.send(response);
     
   } catch (error) {
     console.error('USSD Error:', error);
     res.set('Content-Type', 'text/plain');
-    res.send('END Sorry, there was an error processing your request. Please try again.');
+    res.send('END Kuna hitilafu. Jaribu tena baadaye.');
   }
 };
 
-// Handle main menu navigation
-const handleMainMenu = async (userInput, session) => {
-  switch (userInput) {
+// Handle main menu
+function handleMainMenu(input, session) {
+  switch (input) {
     case '1':
-      session.currentMenu = 'FARMER_REGISTER';
-      session.step = 0;
-      return USSD_MENUS.FARMER_REGISTER.text;
-      
+      session.currentMenu = 'register_farmer';
+      return menus.register_farmer.text;
     case '2':
-      session.currentMenu = 'BUYER_REGISTER';
-      session.step = 0;
-      return USSD_MENUS.BUYER_REGISTER.text;
-      
+      session.currentMenu = 'register_buyer';
+      return menus.register_buyer.text;
     case '3':
-      session.currentMenu = 'MARKET_PRICES';
-      return USSD_MENUS.MARKET_PRICES.text;
-      
+      session.currentMenu = 'market_prices';
+      return menus.market_prices.text;
     case '4':
-      session.currentMenu = 'WEATHER';
-      return USSD_MENUS.WEATHER.text;
-      
+      session.currentMenu = 'orders';
+      return menus.orders.text;
     case '5':
-      return 'END Account management coming soon. Thank you for using AgriConnect!';
-      
+      session.currentMenu = 'account';
+      return menus.account.text;
+    case '6':
+      session.currentMenu = 'help';
+      return menus.help.text;
+    case '0':
+      return 'END Asante kwa kutumia AgriConnect Tanzania!';
     default:
-      return USSD_MENUS.MAIN.text;
+      return menus.main.text;
   }
-};
+}
 
-// Handle farmer registration flow
-const handleFarmerRegistration = async (userInput, session) => {
-  if (userInput === '0') {
-    session.currentMenu = 'MAIN';
-    return USSD_MENUS.MAIN.text;
+// Handle farmer registration
+function handleFarmerRegistration(input, session) {
+  switch (input) {
+    case '1':
+      return 'CON Ingiza jina lako:';
+    case '2':
+      return 'CON Ingiza eneo lako (mji/wilaya):';
+    case '3':
+      return 'CON Chagua aina ya mazao:\n1. Mahindi\n2. Mchele\n3. Maharage\n4. Nyanya\n5. Mengineyo';
+    case '0':
+      session.currentMenu = 'main';
+      return menus.main.text;
+    default:
+      return menus.register_farmer.text;
   }
+}
+
+// Handle buyer registration
+function handleBuyerRegistration(input, session) {
+  switch (input) {
+    case '1':
+      return 'CON Ingiza jina la biashara yako:';
+    case '2':
+      return 'CON Ingiza eneo la biashara (mji/wilaya):';
+    case '3':
+      return 'CON Chagua aina ya biashara:\n1. Jumla\n2. Rejareja\n3. Kiwanda\n4. Mengineyo';
+    case '0':
+      session.currentMenu = 'main';
+      return menus.main.text;
+    default:
+      return menus.register_buyer.text;
+  }
+}
+
+// Handle market prices
+function handleMarketPrices(input, session) {
+  const prices = {
+    '1': 'Mahindi: TSh 1,200/kg (+5% kutoka wiki iliyopita)\nSoko: Kariakoo, Dar es Salaam',
+    '2': 'Mchele: TSh 2,500/kg (bei imara)\nSoko: Tandale, Dar es Salaam',
+    '3': 'Maharage: TSh 3,800/kg (+8% kutoka wiki iliyopita)\nSoko: Mwenge, Dar es Salaam',
+    '4': 'Nyanya: TSh 1,800/kg (-2% kutoka wiki iliyopita)\nSoko: Buguruni, Dar es Salaam',
+    '5': 'Vitunguu: TSh 2,200/kg (+3% kutoka wiki iliyopita)\nSoko: Ilala, Dar es Salaam',
+    '6': 'Karanga: TSh 4,500/kg (+12% kutoka wiki iliyopita)\nSoko: Temeke, Dar es Salaam'
+  };
   
-  switch (session.step) {
-    case 0:
-      if (userInput === '1') {
-        session.step = 1;
-        return 'CON Enter your full name:';
-      }
-      return USSD_MENUS.FARMER_REGISTER.text;
-      
-    case 1:
-      session.userData.name = userInput;
-      session.step = 2;
-      return 'CON Enter your location:';
-      
-    case 2:
-      session.userData.location = userInput;
-      session.step = 3;
-      return 'CON Enter your main crop type:';
-      
-    case 3:
-      session.userData.cropType = userInput;
-      
-      // Create farmer record (simplified)
-      const farmerData = {
-        name: session.userData.name,
-        phone: session.phoneNumber,
-        location: session.userData.location,
-        cropType: session.userData.cropType
-      };
-      
-      try {
-        // In a real implementation, you'd save to database here
-        console.log('New farmer registered:', farmerData);
-        
-        // Send welcome SMS
-        await smsService.sendWelcomeSMS(session.phoneNumber, session.userData.name);
-        
-        return `END Thank you ${session.userData.name}! You have been registered as a farmer. You will receive SMS updates about market prices and weather.`;
-      } catch (error) {
-        console.error('Error registering farmer:', error);
-        return 'END Registration failed. Please try again later.';
-      }
-      
-    default:
-      return USSD_MENUS.FARMER_REGISTER.text;
+  if (prices[input]) {
+    return 'END ' + prices[input] + '\n\nAsante kwa kutumia AgriConnect!';
+  } else if (input === '0') {
+    session.currentMenu = 'main';
+    return menus.main.text;
+  } else {
+    return menus.market_prices.text;
   }
-};
+}
 
-// Handle buyer registration flow
-const handleBuyerRegistration = async (userInput, session) => {
-  if (userInput === '0') {
-    session.currentMenu = 'MAIN';
-    return USSD_MENUS.MAIN.text;
-  }
-  
-  switch (session.step) {
-    case 0:
-      if (userInput === '1') {
-        session.step = 1;
-        return 'CON Enter your business name:';
-      }
-      return USSD_MENUS.BUYER_REGISTER.text;
-      
-    case 1:
-      session.userData.businessName = userInput;
-      session.step = 2;
-      return 'CON Enter your location:';
-      
-    case 2:
-      session.userData.location = userInput;
-      session.step = 3;
-      return 'CON Enter business type (Wholesale/Retail):';
-      
-    case 3:
-      session.userData.businessType = userInput;
-      
-      // Create buyer record (simplified)
-      const buyerData = {
-        name: session.userData.businessName,
-        phone: session.phoneNumber,
-        location: session.userData.location,
-        businessType: session.userData.businessType
-      };
-      
-      try {
-        // In a real implementation, you'd save to database here
-        console.log('New buyer registered:', buyerData);
-        
-        // Send welcome SMS
-        await smsService.sendBuyerWelcomeSMS(session.phoneNumber, session.userData.businessName);
-        
-        return `END Thank you! ${session.userData.businessName} has been registered as a buyer. You will receive SMS updates about crop availability.`;
-      } catch (error) {
-        console.error('Error registering buyer:', error);
-        return 'END Registration failed. Please try again later.';
-      }
-      
+// Handle orders
+function handleOrders(input, session) {
+  switch (input) {
+    case '1':
+      return 'END Utaratibu wa kutengeneza oda unaendelezwa.\nTumia *150*00*4*1# kwa maelezo zaidi.';
+    case '2':
+      return 'END Oda zako:\n1. Mahindi 50kg - Inasubiri\n2. Mchele 30kg - Imekamilika\n\nAsante!';
+    case '3':
+      return 'END Oda zinazopatikana:\n1. Nyanya 100kg - TSh 180,000\n2. Maharage 25kg - TSh 95,000\n\nPiga *150*00*4*3# kuona zaidi.';
+    case '4':
+      return 'END Historia ya oda zako:\nJumla ya miamala: 15\nKiasi cha jumla: TSh 2,450,000\n\nAsante!';
+    case '0':
+      session.currentMenu = 'main';
+      return menus.main.text;
     default:
-      return USSD_MENUS.BUYER_REGISTER.text;
+      return menus.orders.text;
   }
-};
+}
 
-// Get USSD session info (for debugging)
+// Handle account
+function handleAccount(input, session) {
+  switch (input) {
+    case '1':
+      return 'END Salio la Akaunti:\nSalio la sasa: TSh 275,000\nAkiba: TSh 150,000\nMikopo: TSh 0\n\nAsante!';
+    case '2':
+      return 'END Historia ya Miamala:\n1. Uuzaji wa mahindi - +TSh 120,000\n2. Ununuzi wa mbegu - -TSh 45,000\n3. Ada ya huduma - -TSh 5,000\n\nAsante!';
+    case '3':
+      return 'END Taarifa za Kibinafsi:\nJina: Mkulima Mzuri\nSimu: ' + session.phoneNumber + '\nEneo: Arusha\nMazao: Mahindi, Maharage\n\nAsante!';
+    case '4':
+      return 'CON Ingiza nambari mpya ya simu:';
+    case '0':
+      session.currentMenu = 'main';
+      return menus.main.text;
+    default:
+      return menus.account.text;
+  }
+}
+
+// Handle help
+function handleHelp(input, session) {
+  switch (input) {
+    case '1':
+      return 'END Maelekezo ya Matumizi:\n1. Piga *150*00#\n2. Chagua chaguo kutoka menyu\n3. Fuata maelekezo\n4. Maliza kwa kubonyeza 0\n\nAsante!';
+    case '2':
+      return 'END Bei za Huduma:\nUsajili: Bure\nUzalishaji wa oda: TSh 500\nMiamala: 2% ya kiasi\nSMS: TSh 50 kwa ujumbe\n\nAsante!';
+    case '3':
+      return 'END Mawasiliano:\nSimu: +255 123 456 789\nSMS: 15000\nBarua pepe: msaada@agriconnect.co.tz\nOfisi: Dar es Salaam, Tanzania\n\nAsante!';
+    case '4':
+      return 'END Maswali Yanayoulizwa Sana:\n1. Je, huduma ni bure? - Usajili ni bure\n2. Ninawezaje kuuza mazao? - Tumia menyu ya oda\n3. Bei zinabadilika lini? - Kila siku\n\nAsante!';
+    case '0':
+      session.currentMenu = 'main';
+      return menus.main.text;
+    default:
+      return menus.help.text;
+  }
+}
+
+// Get all USSD sessions
 const getUSSDSessions = async (req, res) => {
   try {
+    const sessionData = Array.from(sessions.entries()).map(([id, data]) => ({
+      sessionId: id,
+      ...data
+    }));
+    
     res.json({
       success: true,
-      data: ussdSessions,
-      count: Object.keys(ussdSessions).length
+      sessions: sessionData,
+      count: sessionData.length
     });
   } catch (error) {
+    console.error('Error getting USSD sessions:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch USSD sessions',
-      message: error.message
+      message: 'Error retrieving USSD sessions'
     });
   }
 };
 
-// Clear USSD sessions (for debugging)
+// Clear all USSD sessions
 const clearUSSDSessions = async (req, res) => {
   try {
-    ussdSessions = {};
+    sessions.clear();
+    
     res.json({
       success: true,
       message: 'All USSD sessions cleared'
     });
   } catch (error) {
+    console.error('Error clearing USSD sessions:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to clear USSD sessions',
-      message: error.message
+      message: 'Error clearing USSD sessions'
     });
   }
 };
 
-module.exports = {
+export default {
   handleUSSD,
   getUSSDSessions,
   clearUSSDSessions

@@ -1,7 +1,7 @@
-import express from 'express'; 
-// const express = require('express');
+import express from 'express';
+import farmersController from '../controllers/farmersController.js';
+
 const router = express.Router();
-const farmersController = require('../controllers/farmersController');
 
 // GET /api/farmers - Get all farmers
 router.get('/', farmersController.getAllFarmers);
@@ -24,4 +24,4 @@ router.post('/:id/sms', farmersController.sendSMSToFarmer);
 // POST /api/farmers/bulk-sms - Send SMS to all farmers
 router.post('/bulk-sms', farmersController.sendBulkSMS);
 
-module.exports = router;
+export default router;

@@ -1,6 +1,6 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const transactionsController = require('../controllers/transactionsController');
+import transactionsController from '../controllers/transactionsController.js';
 
 // GET /api/transactions - Get all transactions (with optional filters)
 router.get('/', transactionsController.getAllTransactions);
@@ -29,4 +29,5 @@ router.get('/farmer/:farmerId', transactionsController.getTransactionsByFarmer);
 // GET /api/transactions/buyer/:buyerId - Get transactions by buyer
 router.get('/buyer/:buyerId', transactionsController.getTransactionsByBuyer);
 
-module.exports = router;
+// module.exports = router;
+export default router;

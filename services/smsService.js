@@ -1,5 +1,5 @@
-const AfricasTalking = require('africastalking');
-
+// const AfricasTalking = require('africastalking');
+import AfricasTalking from 'africastalking';
 // Initialize Africa's Talking
 const credentials = {
   apiKey: process.env.AFRICASTALKING_API_KEY,
@@ -85,7 +85,7 @@ const sendCropAvailabilityAlert = async (phoneNumbers, cropInfo) => {
   return await sendBulkSMS(phoneNumbers, message);
 };
 
-module.exports = {
+export default {
   sendSMS,
   sendBulkSMS,
   sendWelcomeSMS,

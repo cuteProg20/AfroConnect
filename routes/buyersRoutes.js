@@ -1,6 +1,6 @@
-const express = require('express');
-const router = express.Router();
-const buyersController = require('../controllers/buyersController');
+import express from 'express';
+ const router = express.Router();
+import buyersController from '../controllers/buyersController.js';
 
 // GET /api/buyers - Get all buyers
 router.get('/', buyersController.getAllBuyers);
@@ -26,4 +26,5 @@ router.post('/bulk-sms', buyersController.sendBulkSMSToBuyers);
 // GET /api/buyers/crop/:crop - Get buyers interested in specific crop
 router.get('/crop/:crop', buyersController.getBuyersByCrop);
 
-module.exports = router;
+// module.exports = router;
+export default router;
