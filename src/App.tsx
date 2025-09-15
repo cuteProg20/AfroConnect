@@ -68,7 +68,7 @@ function App() {
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
             Tunawaunganisha wakulima na wanunuzi kupitia teknolojia ya kisasa. 
-            Pata bei za soko, ushauri wa kilimo, na uongozi wa miamala kwa kutumia simu yako.
+            Pata bei za soko, ushauri wa kilimoo, na uongozi wa miamala kwa kutumia simu yako.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <div className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium">
