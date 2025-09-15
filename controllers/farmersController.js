@@ -1,5 +1,4 @@
 import smsService from '../services/smsService.js';
-<<<<<<< HEAD
 
 // In-memory storage for demo purposes
 // In production, you'd use a proper database
@@ -25,9 +24,6 @@ let farmers = [
 ];
 
 let nextId = 3;
-=======
-import { farmersDB } from '../services/databaseService.js';
->>>>>>> development
 
 // Get all farmers
 const getAllFarmers = async (req, res) => {

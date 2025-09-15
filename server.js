@@ -3,20 +3,14 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-<<<<<<< HEAD
-=======
 import { testConnection } from './config/database.js';
->>>>>>> development
 
 // ES module compatibility
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 dotenv.config();
-<<<<<<< HEAD
 console.log(process.env);
-=======
->>>>>>> development
 
 import farmersRoutes from './routes/farmersRoutes.js';
 import buyersRoutes from './routes/buyersRoutes.js';
@@ -71,10 +65,7 @@ app.use('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
-<<<<<<< HEAD
-=======
   
   // Test database connection
   testConnection();
->>>>>>> development
 });

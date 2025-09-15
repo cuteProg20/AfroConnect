@@ -1,5 +1,4 @@
 import smsService from '../services/smsService.js';
-<<<<<<< HEAD
 
 // In-memory storage for demo purposes
 // In production, you'd use a proper database
@@ -45,9 +44,6 @@ let transactions = [
 ];
 
 let nextTransactionId = 3;
-=======
-import { transactionsDB } from '../services/databaseService.js';
->>>>>>> development
 
 // Get all transactions
 const getAllTransactions = async (req, res) => {
