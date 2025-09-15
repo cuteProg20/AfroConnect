@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import { useState } from 'react';
 import { Sprout, Phone, MessageSquare, Users, TrendingUp, MapPin, Smartphone, Send } from 'lucide-react';
-=======
-// import React from 'react';
->>>>>>> development
 
 function App() {
   const [ussdInput, setUssdInput] = useState('');
@@ -42,7 +38,6 @@ function App() {
   };
 
   return (
-<<<<<<< HEAD
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-green-100">
@@ -312,10 +307,6 @@ function App() {
           </div>
         </div>
       </section>
-=======
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <p>Start prompting (or editing) to see magic happen :</p>
->>>>>>> development
     </div>
   );
 }
