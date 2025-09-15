@@ -88,7 +88,7 @@ const handleUSSD = async (req, res) => {
       response = 'END Asante kwa kutumia AgriConnect Tanzania!';
       continueSession = false;
       sessions.delete(sessionId);
-    } else if (response.startsWith('END')) {
+    } else if (typeof response === 'string' && response.startsWith('END')) {
       continueSession = false;
       sessions.delete(sessionId);
     } else {
