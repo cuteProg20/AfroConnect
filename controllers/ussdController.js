@@ -48,7 +48,7 @@ const handleUSSD = async (req, res) => {
       step: 0
     };
     
-    let response = '';
+  let response = '';
     let continueSession = true;
     
     // Parse user input
@@ -82,6 +82,10 @@ const handleUSSD = async (req, res) => {
         response = menus.main.text;
         session.currentMenu = 'main';
     }
+    // Fallback if response is undefined or empty
+    if (!response || typeof response !== 'string') {
+      response = 'CON Samahani, chaguo si sahihi. Tafadhali jaribu tena.';
+    }
     
     // Check if session should end
     if (lastInput === '0' && session.currentMenu === 'main') {
@@ -94,7 +98,10 @@ const handleUSSD = async (req, res) => {
     } else {
       // Update session
       sessions.set(sessionId, session);
-      response = 'CON ' + response;
+      // Only prefix with CON if not already prefixed
+      if (!response.startsWith('CON') && !response.startsWith('END')) {
+        response = 'CON ' + response;
+      }
     }
     
     res.set('Content-Type', 'text/plain');
